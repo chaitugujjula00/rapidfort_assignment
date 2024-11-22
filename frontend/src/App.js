@@ -74,12 +74,11 @@ const DocumentConverter = () => {
     <div className="max-w-2xl mx-auto p-6">
       <div className="space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Document Converter</h1>
-          <p className="text-gray-600">Convert DOCX files to PDF</p>
+          <h1 className="text-3xl font-bold mb-2">Document Converter</h1>
+          <p className="text-gray-800">Convert DOCX files to PDF</p>
         </div>
-
-        {/* File Upload */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        
+        <div className="border-2 border-dashed border-gray-800 bg-gray-100 text-gray-800 rounded-lg p-6 text-center">
           <input
             type="file"
             accept=".docx"
@@ -91,8 +90,8 @@ const DocumentConverter = () => {
             htmlFor="file-upload"
             className="cursor-pointer flex flex-col items-center"
           >
-            <Upload className="w-12 h-12 text-gray-400 mb-2" />
-            <span className="text-sm text-gray-600">
+            <Upload className="w-12 h-12 text-gray-800 mb-2" />
+            <span className="text-sm text-gray-800">
               {file ? file.name : 'Click to upload DOCX file'}
             </span>
           </label>
@@ -106,6 +105,7 @@ const DocumentConverter = () => {
               <h2 className="font-semibold">File Metadata</h2>
             </div>
             <div className="text-sm text-gray-600 space-y-1">
+              <h2 className='text-md text-black font-bold'>Title: {file.name}</h2>
               <p>Size: {metadata.size} bytes</p>
               <p>Created: {new Date(metadata.created).toLocaleString()}</p>
               <p>Modified: {new Date(metadata.modified).toLocaleString()}</p>
