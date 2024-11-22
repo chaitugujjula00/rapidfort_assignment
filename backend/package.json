@@ -10,10 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "api2pdf": "^2.0.3",
-    "child_process": "^1.0.2",
     "cors": "^2.8.5",
-    "docx-pdf": "^0.0.1",
     "express": "^4.21.1",
     "fs.promises": "^0.1.2",
     "libreoffice-convert": "^1.6.0",
