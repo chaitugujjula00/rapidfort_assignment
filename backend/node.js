@@ -6,7 +6,7 @@ const libre  = require('libreoffice-convert');
 const mammoth = require('mammoth');
 const multer = require('multer');
 const path = require('path');
-const PDFDocument = require('pdfkit');
+// const PDFDocument = require('pdfkit');
 const temp = require('temp');
 libre.convertAsync = require('util').promisify(libre.convert);
 
@@ -80,81 +80,73 @@ app.post('/metadata', uploadMiddleware.single('file'), async (req, res) => {
 });
 
 // Convert document endpoint
-app.post('/convert', uploadMiddleware.single('file'), async (req, res) => {
+
+
+
+const { PDFDocument } = require('pdf-lib');
+
+// Multer setup for file uploads
+// const upload = multer({ dest: 'uploads/' });
+app.post('/convert', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  const inputPath = req.file.path;
-  const outputPath = path.join('uploads', `${Date.now()}-output.pdf`);
-  const password = req.body.password;
+  const inputPath = req.file.path; // Path of the uploaded DOCX file
+  const password = req.body.password; // Password for the PDF
 
   try {
-    // Read the input file
+    // 1. Read the uploaded DOCX file
     const docxBuffer = await fs.readFile(inputPath);
-    
-    // Convert to PDF
-    const pdfBuffer = await libre.convertAsync(docxBuffer, '.pdf', undefined);
-    
-    // If password protection is requested
-    if (password) {
-      // Create a promise-based temporary file
-      tempFilePath = await new Promise((resolve, reject) => {
-        temp.open({ suffix: '.pdf' }, (err, info) => {
-          if (err) return reject(err);
-          resolve(info.path);
-        });
-      });
 
-      // Create protected PDF
-      const doc = new PDFDocument({
-        userPassword: password,
-        ownerPassword: password,
-        permissions: {
-          printing: 'lowResolution',
-          modifying: false,
-          copying: false,
-          annotating: false,
-          fillingForms: false,
-          contentAccessibility: true,
-          documentAssembly: false
-        }
-      });
+    // 2. Convert DOCX to PDF using LibreOffice
+    const pdfBuffer = await libre.convertAsync(docxBuffer, '.pdf');
 
-      // Create write stream
-      const writeStream = fs.createWriteStream(tempFilePath);
-
-      // Pipe PDF to file
-      doc.pipe(writeStream);
-      doc.end(pdfBuffer);
-
-      // Wait for file to be written
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      // Read protected PDF
-      const protectedPdfBuffer = await fs.readFile(tempFilePath);
-
-      // Send protected PDF
+    // 3. If no password is provided, send the PDF as is
+    if (!password) {
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(req.file.originalname, '.docx')}.pdf`);
-      res.send(protectedPdfBuffer);
-    } else {
-      // Send unprotected PDF
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(req.file.originalname, '.docx')}.pdf`);
-      res.send(pdfBuffer);
-    }
-    } catch (error) {
-      console.error('PDF processing error:', error);
-      res.status(500).send('Error processing PDF');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${path.basename(req.file.originalname, '.docx')}.pdf`
+      );
+      return res.send(pdfBuffer);
     }
 
-    // Cleanup
-    await fs.unlink(inputPath);
+    // 4. Apply password protection using pdf-lib
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+    pdfDoc.encrypt({
+      ownerPassword: password,
+      userPassword: password,
+      permissions: {
+        copying: false,
+        modifying: false,
+        printing: false,
+      },
+    });
+
+    const protectedPdfBytes = await pdfDoc.save();
+
+    // 5. Send the password-protected PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${path.basename(req.file.originalname, '.docx')}-protected.pdf`
+    );
+    res.send(Buffer.from(protectedPdfBytes));
+  } catch (error) {
+    console.error('Error processing PDF:', error);
+    res.status(500).json({ error: 'Failed to process the document' });
+  } finally {
+    // 6. Clean up the uploaded DOCX file
+    try {
+      await fs.unlink(inputPath);
+    } catch (cleanupError) {
+      console.error('Error cleaning up uploaded file:', cleanupError);
+    }
+  }
 });
+
 
 // Error handling middleware
 app.use((error, req, res, next) => {
