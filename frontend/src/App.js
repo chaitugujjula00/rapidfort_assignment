@@ -26,7 +26,7 @@ const DocumentConverter = () => {
     formData.append('file', selectedFile);
     
     try {
-      const response = await fetch('http://localhost:8000/metadata', {
+      const response = await fetch('https://rapidfort-assignment.onrender.com/metadata', {
         method: 'POST',
         body: formData,
       });
@@ -52,7 +52,7 @@ const DocumentConverter = () => {
     if (password) formData.append('password', password);
     
     try {
-      const response = await fetch('http://localhost:8000/convert', {
+      const response = await fetch('https://rapidfort-assignment.onrender.com/convert', {
         method: 'POST',
         body: formData,
       });
